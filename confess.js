@@ -27,17 +27,22 @@ var confess = {
         }
         this.config = this.mergeConfig(cliConfig, cliConfig.configFile);
         var task = this[this.config.task];
+        console.log(task)
+        //var task = 'performance';
         this.load(this.config, task, this);
     },
 
     performance: {
         resources: [],
         onLoadStarted: function (page, config) {
+            //This callback is invoked when the page starts the loading
             if (!this.performance.start) {
                 this.performance.start = new Date().getTime();
             }
         },
         onResourceRequested: function (page, config, request) {
+            //This callback is invoked when the page requests a resource
+            //Should only be invoked once per resource
             var now = new Date().getTime();
             this.performance.resources[request.id] = {
                 id: request.id,
@@ -54,8 +59,10 @@ var confess = {
             }
         },
         onResourceReceived: function (page, config, response) {
+            //This callback is invoked when the a resource requested by the page is received
+            //If the resource is large and sent by the server in multiple chunks
             var now = new Date().getTime(),
-                resource = this.performance.resources[response.id];
+            resource = this.performance.resources[response.id];
             resource.responses[response.stage] = response;
             if (!resource.times[response.stage]) {
                 resource.times[response.stage] = now;
@@ -72,6 +79,7 @@ var confess = {
             }
         },
         onLoadFinished: function (page, config, status) {
+            //This callback is invoked when the page finishes the loading
             var start = this.performance.start,
                 finish =  new Date().getTime(),
                 resources = this.performance.resources,
@@ -139,83 +147,13 @@ var confess = {
                 resources.forEach(function (resource) {
                     console.log(
                         ths.pad(resource.id, 3) + ': ' +
+                        ths.pad(resource.times.request - start, 6) + 'ms; ' +
+                        ths.pad(resource.times.start - resource.times.request, 5) + 'ms; ' +
                         ths.pad(resource.duration, 6) + 'ms; ' +
                         ths.pad(resource.size, 7) + 'b; ' +
                         ths.truncate(resource.url, 84)
                     );
                 });
-            }
-        }
-    },
-
-    appcache: {
-        resourceUrls: {},
-        onResourceRequested: function (page, config, request) {
-            if (config.appcache.urlsFromRequests) {
-                this.appcache.resourceUrls[request.url] = true;
-            }
-        },
-        onLoadFinished: function (page, config, status) {
-            if (status!='success') {
-                console.log('# FAILED TO LOAD');
-                return;
-            }
-
-            var key, key2, url,
-                neverMatch = "(?!a)a",
-                cacheRegex = new RegExp(config.appcache.cacheFilter || neverMatch),
-                networkRegex = new RegExp(config.appcache.networkFilter || neverMatch);
-
-            console.log('CACHE MANIFEST');
-            console.log('');
-            console.log('# Time: ' + new Date());
-            if (config.verbose) {
-                console.log('# This manifest was created by confess.js, http://github.com/jamesgpearce/confess');
-                console.log('#');
-                console.log('# Retrieved URL: ' + this.getFinalUrl(page));
-                console.log('# User-agent: ' + page.settings.userAgent);
-                console.log('#');
-                this.emitConfig(config, '# ');
-            }
-            console.log('');
-            console.log('CACHE:');
-
-            if (config.appcache.urlsFromDocument) {
-                for (url in this.getResourceUrls(page)) {
-                    this.appcache.resourceUrls[url] = true;
-                }
-            }
-            for (url in this.appcache.resourceUrls) {
-                if (cacheRegex.test(url) && !networkRegex.test(url)) {
-                    console.log(url);
-                }
-            };
-            console.log('');
-            console.log('NETWORK:');
-            console.log('*');
-        }
-    },
-
-    cssproperties: {
-        resourceUrls: {},
-        onResourceRequested: function (page, config, request) {
-            if (config.appcache.urlsFromRequests) {
-                this.appcache.resourceUrls[request.url] = true;
-            }
-        },
-        onLoadFinished: function (page, config, status) {
-            if (status!='success') {
-                console.log('# FAILED TO LOAD');
-                return;
-            }
-            if (config.verbose) {
-                console.log('');
-                this.emitConfig(config, '');
-            }
-            console.log('');
-            console.log('CSS properties used:');
-            for (property in this.getCssProperties(page)) {
-                console.log(property);
             }
         }
     },
