@@ -1,4 +1,6 @@
 var fs = require('fs');
+//var WebPage = require('webpage');
+
 var confess = {
 
     run: function () {
@@ -8,7 +10,7 @@ var confess = {
                 name: 'url',
                 def: 'http://google.com',
                 req: true,
-                desc: 'the URL of the app to cache'
+                desc: 'the URL of the site to profile'
             }, {
                 name: 'task',
                 def: 'appcache',
@@ -32,12 +34,54 @@ var confess = {
 
     performance: {
         resources: [],
+        loadTimes: {},
+
+        onInitialized: function(page, config) {
+
+            page.evaluate(function(startTime, loadTimes) {
+                var now = new Date().getTime();
+                //check the readystate within the page being loaded
+
+                //Returns "loading" while the document is loading
+                var _timer3=setInterval(function(){
+                    if(/loading/.test(document.readyState)){
+                        loadTimes.loading = (new Date().getTime() - startTime);
+                        //don't clear the interval until we get last measurement
+                    }
+                }, 5);
+
+                // "interactive" once it is finished parsing but still loading sub-resources
+                var _timer1=setInterval(function(){
+                    if(/interactive/.test(document.readyState)){
+                        loadTimes.interactive = (new Date().getTime() - startTime);
+                        clearInterval(_timer1);
+                        //clear loading interval
+                        clearInterval(_timer3);
+                    }
+                }, 5);
+
+                //The DOMContentLoaded event is fired when the document has been completely
+                //loaded and parsed, without waiting for stylesheets, images, and subframes
+                //to finish loading
+                document.addEventListener("DOMContentLoaded", function() {
+                    loadTimes.parsed = (new Date().getTime() - startTime);
+                }, false);
+
+                //detect a fully-loaded page
+                window.addEventListener("load", function() {
+                    loadTimes.complete = (new Date().getTime() - startTime);
+                }, false);
+
+            }, this.performance.start, this.performance.loadTimes);
+        },
+
         onLoadStarted: function (page, config) {
             //This callback is invoked when the page starts the loading
             if (!this.performance.start) {
                 this.performance.start = new Date().getTime();
             }
         },
+
         onResourceRequested: function (page, config, request) {
             //This callback is invoked when the page requests a resource
             //Should only be invoked once per resource
@@ -56,6 +100,7 @@ var confess = {
                 this.performance.start = now;
             }
         },
+
         onResourceReceived: function (page, config, response) {
             //This callback is invoked when the a resource requested by the page is received
             //If the resource is large and sent by the server in multiple chunks
@@ -76,6 +121,7 @@ var confess = {
                 });
             }
         },
+
         onLoadFinished: function (page, config, status) {
             //This callback is invoked when the page finishes the loading
             var start = this.performance.start,
@@ -112,48 +158,8 @@ var confess = {
                 }
             });
 
-            /*
-            if (config.verbose) {
-                console.log('');
-                this.emitConfig(config, '');
-            }
-            console.log('');
-            console.log('Elapsed load time: ' + this.pad(elapsed, 6) + 'ms');
-            console.log('   # of resources: ' + this.pad(resources.length-1, 8));
-            console.log('');
-            console.log(' Fastest resource: ' + this.pad(fastest.duration, 6) + 'ms; ' + this.truncate(fastest.url));
-            console.log(' Slowest resource: ' + this.pad(slowest.duration, 6) + 'ms; ' + this.truncate(slowest.url));
-            console.log('  Total resources: ' + this.pad(totalDuration, 6) + 'ms');
-            console.log('');
-            console.log('Smallest resource: ' + this.pad(smallest.size, 7) + 'b; ' + this.truncate(smallest.url));
-            console.log(' Largest resource: ' + this.pad(largest.size, 7) + 'b; ' + this.truncate(largest.url));
-            console.log('  Total resources: ' + this.pad(totalSize, 7) + 'b' + (missingSize ? '; (at least)' : ''));
-            if (config.verbose) {
-                console.log('');
-                var ths = this,
-                    length = 104,
-                    ratio = length / elapsed,
-                    bar;
-                resources.forEach(function (resource) {
-                    bar = ths.repeat(' ', (resource.times.request - start) * ratio) +
-                          ths.repeat('-', (resource.times.start - resource.times.request) * ratio) +
-                          ths.repeat('=', (resource.times.end - resource.times.start) * ratio)
-                    ;
-                    bar = bar.substr(0, length) + ths.repeat(' ', length - bar.length);
-                    console.log(ths.pad(resource.id, 3) + '|' + bar + '|');
-                });
-                console.log('');
-            */
-            var ths = this;
+            console.log('Loadtime: '+elapsed+' numresources: '+(resources.length-1)+' totalresourcebytes: '+totalSize)
             resources.forEach(function (resource) {
-                /*console.log(
-                    ths.pad(resource.id, 3) + ': ' +
-                    ths.pad(resource.times.request - start, 6) + 'ms; ' +
-                    ths.pad(resource.times.start - resource.times.request, 5) + 'ms; ' +
-                    ths.pad(resource.duration, 6) + 'ms; ' +
-                    ths.pad(resource.size, 7) + 'b; ' +
-                    ths.truncate(resource.url, 84)
-                );*/
                 console.log(
                     resource.id + ' ' +
                     (resource.times.request - start) + ' ' +
@@ -163,7 +169,7 @@ var confess = {
                     resource.url
                 );
             });
-            //}
+        
         }
     },
 
