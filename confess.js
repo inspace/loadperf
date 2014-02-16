@@ -27,8 +27,6 @@ var confess = {
         }
         this.config = this.mergeConfig(cliConfig, cliConfig.configFile);
         var task = this[this.config.task];
-        console.log(task)
-        //var task = 'performance';
         this.load(this.config, task, this);
     },
 
@@ -114,6 +112,7 @@ var confess = {
                 }
             });
 
+            /*
             if (config.verbose) {
                 console.log('');
                 this.emitConfig(config, '');
@@ -144,17 +143,27 @@ var confess = {
                     console.log(ths.pad(resource.id, 3) + '|' + bar + '|');
                 });
                 console.log('');
-                resources.forEach(function (resource) {
-                    console.log(
-                        ths.pad(resource.id, 3) + ': ' +
-                        ths.pad(resource.times.request - start, 6) + 'ms; ' +
-                        ths.pad(resource.times.start - resource.times.request, 5) + 'ms; ' +
-                        ths.pad(resource.duration, 6) + 'ms; ' +
-                        ths.pad(resource.size, 7) + 'b; ' +
-                        ths.truncate(resource.url, 84)
-                    );
-                });
-            }
+            */
+            var ths = this;
+            resources.forEach(function (resource) {
+                /*console.log(
+                    ths.pad(resource.id, 3) + ': ' +
+                    ths.pad(resource.times.request - start, 6) + 'ms; ' +
+                    ths.pad(resource.times.start - resource.times.request, 5) + 'ms; ' +
+                    ths.pad(resource.duration, 6) + 'ms; ' +
+                    ths.pad(resource.size, 7) + 'b; ' +
+                    ths.truncate(resource.url, 84)
+                );*/
+                console.log(
+                    resource.id + ' ' +
+                    (resource.times.request - start) + ' ' +
+                    (resource.times.start - resource.times.request) + ' ' +
+                    resource.duration + ' ' +
+                    resource.size + ' ' +
+                    resource.url
+                );
+            });
+            //}
         }
     },
 
