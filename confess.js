@@ -1,6 +1,4 @@
 var fs = require('fs');
-//var WebPage = require('webpage');
-
 var confess = {
 
     run: function () {
@@ -34,26 +32,28 @@ var confess = {
 
     performance: {
         resources: [],
-        loadTimes: {},
+        //loadTimes: {loading: 0, interactive: 0, parsed: 0, complete: 0}, //this is just an object in Javascript
+        evalConsole : {},
+        evalConsoleErrors: [],
 
         onInitialized: function(page, config) {
 
-            page.evaluate(function(startTime, loadTimes) {
+            var pageeval = page.evaluate(function(startTime) {
                 var now = new Date().getTime();
                 //check the readystate within the page being loaded
 
                 //Returns "loading" while the document is loading
-                var _timer3=setInterval(function(){
+                var _timer3 = setInterval(function(){
                     if(/loading/.test(document.readyState)){
-                        loadTimes.loading = (new Date().getTime() - startTime);
+                        console.log('loading-' + (new Date().getTime() - startTime));
                         //don't clear the interval until we get last measurement
                     }
                 }, 5);
 
                 // "interactive" once it is finished parsing but still loading sub-resources
-                var _timer1=setInterval(function(){
+                var _timer1 = setInterval(function(){
                     if(/interactive/.test(document.readyState)){
-                        loadTimes.interactive = (new Date().getTime() - startTime);
+                        console.log('interactive-' + (new Date().getTime() - startTime));
                         clearInterval(_timer1);
                         //clear loading interval
                         clearInterval(_timer3);
@@ -64,15 +64,15 @@ var confess = {
                 //loaded and parsed, without waiting for stylesheets, images, and subframes
                 //to finish loading
                 document.addEventListener("DOMContentLoaded", function() {
-                    loadTimes.parsed = (new Date().getTime() - startTime);
+                    console.log('DOMContentLoaded-' + (new Date().getTime() - startTime));
                 }, false);
 
                 //detect a fully-loaded page
                 window.addEventListener("load", function() {
-                    loadTimes.complete = (new Date().getTime() - startTime);
+                    console.log('onload-' + (new Date().getTime() - startTime));
                 }, false);
 
-            }, this.performance.start, this.performance.loadTimes);
+            }, this.performance.start);
         },
 
         onLoadStarted: function (page, config) {
@@ -130,6 +130,9 @@ var confess = {
                 slowest, fastest, totalDuration = 0,
                 largest, smallest, totalSize = 0,
                 missingSize = false,
+                onload = this.performance.evalConsole.onload,
+                loading = this.performance.evalConsole.loading,
+                interactive = this.performance.evalConsole.interactive,
                 elapsed = finish - start;
 
             resources.forEach(function (resource) {
@@ -158,7 +161,10 @@ var confess = {
                 }
             });
 
-            console.log('Loadtime: '+elapsed+' numresources: '+(resources.length-1)+' totalresourcebytes: '+totalSize)
+            console.log('Loadtime: '+elapsed+' numresources: '+(resources.length-1)+
+                        ' totalresourcebytes: '+totalSize+' loading: '+loading+
+                        ' interactive: '+interactive+' onload: '+onload);
+            //console.log('Loading: '+loading+' interactive: '+interactive+' parsed: '+parsed+' complete: '+complete);
             resources.forEach(function (resource) {
                 console.log(
                     resource.id + ' ' +
@@ -360,6 +366,24 @@ var confess = {
                 phantom.exit();
             }
         }
+
+        page.settings.localToRemoteUrlAccessEnabled = true;
+        page.settings.webSecurityEnabled = false;
+        page.onConsoleMessage = function (msg) {
+            console.log(msg)
+            if (msg.indexOf('jserror-') >= 0){
+                confess.performance.evalConsoleErrors.push(msg.substring('jserror-'.length, msg.length));
+            } else{
+                if (msg.indexOf('loading-') >= 0){
+                    confess.performance.evalConsole.loading = msg.substring('loading-'.length, msg.length);
+                } else if (msg.indexOf('interactive-') >= 0){
+                    confess.performance.evalConsole.interactive = msg.substring('interactive-'.length, msg.length);
+                } else if (msg.indexOf('onload-') >= 0){
+                    confess.performance.evalConsole.onload = msg.substring('onload-'.length, msg.length);
+                }
+            }
+        };
+
         page.open(config.url);
     },
 
