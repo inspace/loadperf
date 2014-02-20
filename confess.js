@@ -32,7 +32,6 @@ var confess = {
 
     performance: {
         resources: [],
-        //loadTimes: {loading: 0, interactive: 0, parsed: 0, complete: 0}, //this is just an object in Javascript
         evalConsole : {},
         evalConsoleErrors: [],
 
@@ -370,7 +369,7 @@ var confess = {
         page.settings.localToRemoteUrlAccessEnabled = true;
         page.settings.webSecurityEnabled = false;
         page.onConsoleMessage = function (msg) {
-            console.log(msg)
+            //console.log(msg)
             if (msg.indexOf('jserror-') >= 0){
                 confess.performance.evalConsoleErrors.push(msg.substring('jserror-'.length, msg.length));
             } else{
