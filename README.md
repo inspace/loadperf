@@ -6,4 +6,16 @@ Snitch is a small script library that uses [PhantomJS 1.2](http://www.phantomjs.
 
 ## Examples
 
-    > phantomjs snitch.js http://nsl.cs.usc.edu peformance
+```
+phantomjs snitch.js http://nsl.cs.usc.edu peformance
+```
+
+```
+Loadtime: 335 numresources: 16 totalresourcebytes: 59075 loading: 205 interactive: 225 onload: 309
+1 0 163 171 12795 http://nsl.cs.usc.edu/
+2 167 13 14 17174 http://nsl.cs.usc.edu/pub/skins/skittlish/base.css
+3 168 27 27 2878 http://nsl.cs.usc.edu/pub/skins/skittlish/app.js
+4 169 29 29 1286 http://nsl.cs.usc.edu/pub/attachtable/attachtable.css
+...
+```
+    
