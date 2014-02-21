@@ -110,6 +110,8 @@ var confess = {
                 resource.times[response.stage] = now;
                 resource.duration = now - resource.times.request;
             }
+
+            /*
             if (response.bodySize) {
                 resource.size = response.bodySize;
             } else if (!resource.size) {
@@ -118,7 +120,22 @@ var confess = {
                         resource.size = parseInt(header.value);
                     }
                 });
+            }*/
+            
+            /*
+            * There is currently a bug in PhantomJS which prevents 
+            * response.bodySize from returning the correct size.
+            * We defer to content-length first if it is available.
+            */
+            response.headers.forEach(function (header) {
+                if (header.name.toLowerCase()=='content-length') {
+                    resource.size = parseInt(header.value);
+                }
+            });
+            if (!resource.size) {
+                resource.size = response.bodySize;
             }
+
         },
 
         onLoadFinished: function (page, config, status) {
