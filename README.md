@@ -1,6 +1,6 @@
 # Snitch
 
-Snitch is a small script library that uses [PhantomJS 1.2](http://www.phantomjs.org/) (or later) to headlessly analyze web pages. Snitch is forked from [[https://github.com/jamesgpearce/confess | confess.js ]] and [[https://github.com/wesleyhales/loadreport | loadreport]]
+Snitch is a small script library that uses [PhantomJS 1.2](http://www.phantomjs.org/) (or later) to headlessly analyze web pages. Snitch is forked from [confess.js](https://github.com/jamesgpearce/confess) and [loadreport](https://github.com/wesleyhales/loadreport).
 
 
 
