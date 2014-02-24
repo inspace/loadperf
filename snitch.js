@@ -1,33 +1,37 @@
 var fs = require('fs');
+var system = require('system');
 var confess = {
-
-    run: function () {
-        var cliConfig = {};
-        if (!this.processArgs(cliConfig, [
-            {
-                name: 'url',
-                def: 'http://google.com',
-                req: true,
-                desc: 'the URL of the site to profile'
-            }, {
-                name: 'task',
-                def: 'appcache',
-                req: false,
-                desc: 'the task to perform',
-                oneof: ['performance', 'appcache', 'cssproperties']
-            }, {
-                name: 'configFile',
-                def: 'config.json',
-                req: false,
-                desc: 'a local configuration file of further confess settings'
-            },
-        ])) {
+    
+    run: function() {
+        
+        var usage = "snitch.js: URL [--screenshot IMAGEPATH(.png)] [--userAgent AGENT] [--help print this message]";
+        if (system.args.length < 2){
+            console.log(usage);
             phantom.exit();
-            return;
         }
-        this.config = this.mergeConfig(cliConfig, cliConfig.configFile);
-        var task = this[this.config.task];
-        this.load(this.config, task, this);
+
+        var url = system.args[1]
+        var agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.12 Safari/535.11";
+        var config = {'userAgent': agent, 'url': url, 'wait': 0, 
+                      'screenshot': null, 'filmstrip': null}
+
+        for(var i=2; i < system.args.length; ++i){
+            var flag = system.args[i];
+            
+            if(flag === '--screenshot'){
+                config.screenshot = system.args[i+1];
+                i = i++;
+            } else if(flag === '--userAgent'){
+                config.userAgent = system.args[i+1];
+                i = i++;
+            } else if(flag === '--help'){
+                console.log(usage);
+                phantom.exit();
+            }
+        
+        }
+
+        this.load(config, this.performance, this); //
     },
 
     performance: {
@@ -39,7 +43,7 @@ var confess = {
 
             var pageeval = page.evaluate(function(startTime) {
                 var now = new Date().getTime();
-                //check the readystate within the page being loaded
+                //check the readystate within the page being eoaded
 
                 //Returns "loading" while the document is loading
                 var _timer3 = setInterval(function(){
@@ -180,7 +184,6 @@ var confess = {
             console.log('Loadtime: '+elapsed+' numresources: '+(resources.length-1)+
                         ' totalresourcebytes: '+totalSize+' loading: '+loading+
                         ' interactive: '+interactive+' onload: '+onload);
-            //console.log('Loading: '+loading+' interactive: '+interactive+' parsed: '+parsed+' complete: '+complete);
             resources.forEach(function (resource) {
                 console.log(
                     resource.id + ' ' +
@@ -191,7 +194,11 @@ var confess = {
                     resource.url
                 );
             });
-        
+       
+            if(config.screenshot) { 
+                page.render(config.screenshot);
+            }
+ 
         }
     },
 
@@ -319,42 +326,16 @@ var confess = {
         });
     },
 
-    emitConfig: function (config, prefix) {
-        console.log(prefix + 'Config:');
-        for (key in config) {
-           if (config[key].constructor === Object) {
-                if (key===config.task) {
-                    console.log(prefix + ' ' + key + ':');
-                    for (key2 in config[key]) {
-                        console.log(prefix + '  ' + key2 + ': ' + config[key][key2]);
-                    }
-                }
-           } else {
-               console.log(prefix + ' ' + key + ': ' + config[key]);
-           }
-       }
-    },
-
     load: function (config, task, scope) {
-        var page = new WebPage(),
-            event;
-        if (config.consolePrefix) {
-            page.onConsoleMessage = function (msg, line, src) {
-                console.log(config.consolePrefix + ' ' + msg + ' (' + src + ', #' + line + ')');
-            }
-        }
-        if (config.userAgent && config.userAgent != "default") {
-            if (config.userAgentAliases[config.userAgent]) {
-                config.userAgent = config.userAgentAliases[config.userAgent];
-            }
-            page.settings.userAgent = config.userAgent;
-        }
+        var page = new WebPage(), event;
+        
+        page.settings.userAgent = config.userAgent;        
+
         ['onInitialized', 'onLoadStarted', 'onResourceRequested', 'onResourceReceived']
         .forEach(function (event) {
             if (task[event]) {
                 page[event] = function () {
-                    var args = [page, config],
-                        a, aL;
+                    var args = [page, config], a, aL;
                     for (a = 0, aL = arguments.length; a < aL; a++) {
                         args.push(arguments[a]);
                     }
@@ -402,66 +383,7 @@ var confess = {
 
         page.open(config.url);
     },
-
-    processArgs: function (config, contract) {
-        var a = 0;
-        var ok = true;
-        contract.forEach(function(argument) {
-            if (a < phantom.args.length) {
-                config[argument.name] = phantom.args[a];
-            } else {
-                if (argument.req) {
-                    console.log('"' + argument.name + '" argument is required. This ' + argument.desc + '.');
-                    ok = false;
-                } else {
-                    config[argument.name] = argument.def;
-                }
-            }
-            if (argument.oneof && argument.oneof.indexOf(config[argument.name])==-1) {
-                console.log('"' + argument.name + '" argument must be one of: ' + argument.oneof.join(', '));
-                ok = false;
-            }
-            a++;
-        });
-        return ok;
-    },
-
-    mergeConfig: function (config, configFile) {
-        if (!fs.exists(configFile)) {
-           configFile = "config.json";
-        }
-        var result = JSON.parse(fs.read(configFile)),
-            key;
-        for (key in config) {
-            result[key] = config[key];
-        }
-        return result;
-    },
-
-    truncate: function (str, length) {
-        length = length || 80;
-        if (str.length <= length) {
-            return str;
-        }
-        var half = length / 2;
-        return str.substr(0, half-2) + '...' + str.substr(str.length-half+1);
-    },
-
-    pad: function (str, length) {
-        var padded = str.toString();
-        if (padded.length > length) {
-            return this.pad(padded, length * 2);
-        }
-        return this.repeat(' ', length - padded.length) + padded;
-    },
-
-    repeat: function (chr, length) {
-        for (var str = '', l = 0; l < length; l++) {
-            str += chr;
-        }
-        return str;
-    },
-
+    
 }
 
 confess.run();
