@@ -7,7 +7,7 @@ Snitch is a small script library that uses [PhantomJS 1.2](http://www.phantomjs.
 ## Examples
 
 ```
-phantomjs snitch.js http://nsl.cs.usc.edu peformance
+phantomjs snitch.js http://nsl.cs.usc.edu
 ```
 
 Column headers are resource id, start time, blocking time, total load time and resource bytes.
@@ -19,4 +19,8 @@ Loadtime: 335 numresources: 16 totalresourcebytes: 59075 loading: 205 interactiv
 4 169 29 29 1286 http://nsl.cs.usc.edu/pub/attachtable/attachtable.css
 ...
 ```
-    
+   
+Take a screenshot of the loaded page 
+```
+phantomjs snitch.js http://nsl.cs.usc.edu --screenshot /home/dudeguy/screenshot.png
+```
