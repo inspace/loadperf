@@ -4,7 +4,7 @@ var confess = {
     
     run: function() {
         
-        var usage = "snitch.js: URL [--screenshot IMAGEPATH(.png)] [--userAgent AGENT] [--help print this message]";
+        var usage = "snitch.js: URL [--delimiter DELIM] [--screenshot IMAGEPATH(.png)] [--userAgent AGENT] [--help print this message]";
         if (system.args.length < 2){
             console.log(usage);
             phantom.exit();
@@ -13,19 +13,25 @@ var confess = {
         var url = system.args[1]
         var agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.12 Safari/535.11";
         var config = {'userAgent': agent, 'url': url, 'wait': 0, 
-                      'screenshot': null, 'filmstrip': null}
+                      'screenshot': null, 'filmstrip': null, 'delimiter': ' '}
 
         for(var i=2; i < system.args.length; ++i){
             var flag = system.args[i];
             
             if(flag === '--screenshot'){
                 config.screenshot = system.args[i+1];
-                i = i++;
+                i++;
             } else if(flag === '--userAgent'){
                 config.userAgent = system.args[i+1];
-                i = i++;
+                i++;
+            } else if(flag === '--delimiter'){
+                config.delimiter = system.args[i+1];
+                i++;
             } else if(flag === '--help'){
                 console.log(usage);
+                phantom.exit();
+            } else {
+                console.log('Unrecognized option: '+flag);
                 phantom.exit();
             }
         
@@ -181,16 +187,20 @@ var confess = {
                 }
             });
 
-            console.log('Loadtime: '+elapsed+' numresources: '+(resources.length-1)+
-                        ' totalresourcebytes: '+totalSize+' loading: '+loading+
-                        ' interactive: '+interactive+' onload: '+onload);
+            console.log('Loadtime' + config.delimiter + elapsed + config.delimiter +
+                        'numresources' + config.delimiter + (resources.length-1) + config.delimiter +
+                        'totalresourcebytes' + config.delimiter + totalSize + config.delimiter +
+                        'loading' + config.delimiter + loading + config.delimiter +
+                        'interactive' + config.delimiter + interactive + config.delimiter +
+                        'onload' + config.delimiter + onload);
+
             resources.forEach(function (resource) {
                 console.log(
-                    resource.id + ' ' +
-                    (resource.times.request - start) + ' ' +
-                    (resource.times.start - resource.times.request) + ' ' +
-                    resource.duration + ' ' +
-                    resource.size + ' ' +
+                    resource.id + config.delimiter +
+                    (resource.times.request - start) + config.delimiter +
+                    (resource.times.start - resource.times.request) + config.delimiter +
+                    resource.duration + config.delimiter +
+                    resource.size + config.delimiter +
                     resource.url
                 );
             });
