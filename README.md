@@ -24,3 +24,8 @@ Take a screenshot of the loaded page
 ```
 phantomjs snitch.js http://nsl.cs.usc.edu --screenshot /home/dudeguy/screenshot.png
 ```
+
+Use the --delimiter option to generate customized output
+```
+phantomjs snitch.js http://www.google.com --delimiter ';'
+```
