@@ -48,26 +48,43 @@ var confess = {
         onInitialized: function(page, config) {
 
             var pageeval = page.evaluate(function(startTime) {
-                var now = new Date().getTime();
+                //var now = new Date().getTime();
                 //check the readystate within the page being eoaded
 
                 //Returns "loading" while the document is loading
-                var _timer3 = setInterval(function(){
+                var _timer1 = setInterval(function(){
                     if(/loading/.test(document.readyState)){
                         console.log('loading-' + (new Date().getTime() - startTime));
                         //don't clear the interval until we get last measurement
-                    }
+                	    clearInterval(_timer1);
+		            }
+
+	                //if(/interactive/.test(document.readyState)){
+                    //    console.log('interactive-' + (new Date().getTime() - startTime));
+                    //    clearInterval(_timer);
+                    //}
+  
                 }, 5);
 
                 // "interactive" once it is finished parsing but still loading sub-resources
-                var _timer1 = setInterval(function(){
-                    if(/interactive/.test(document.readyState)){
-                        console.log('interactive-' + (new Date().getTime() - startTime));
-                        clearInterval(_timer1);
+                //var _timer1 = setInterval(function(){
+                //    if(/interactive/.test(document.readyState)){
+                //        console.log('interactive-' + (new Date().getTime() - startTime));
+                //        clearInterval(_timer1);
                         //clear loading interval
-                        clearInterval(_timer3);
-                    }
-                }, 5);
+                //        clearInterval(_timer3);
+                //    }
+                //}, 5);
+
+		        document.onreadystatechange = function() {
+		            //console.log('event '+document.readyState);
+		            if (document.readyState === "interactive"){
+		                console.log('interactive-' + (new Date().getTime() - startTime)); 
+		            } else if (document.readyState === "loading"){
+		                console.log('loading-' + (new Date().getTime() - startTime));
+		            }
+		        }
+
 
                 //The DOMContentLoaded event is fired when the document has been completely
                 //loaded and parsed, without waiting for stylesheets, images, and subframes
