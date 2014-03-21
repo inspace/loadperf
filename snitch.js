@@ -4,7 +4,7 @@ var confess = {
     
     run: function() {
         
-        var usage = "snitch.js: URL [--delimiter DELIM] [--screenshot IMAGEPATH(.png)] [--userAgent AGENT] [--help print this message]";
+        var usage = "snitch.js: URL [--delimiter DELIM] [--timeout seconds (default: 10.0)][--screenshot IMAGEPATH(.png)] [--userAgent AGENT] [--help print this message]";
         if (system.args.length < 2){
             console.log(usage);
             phantom.exit();
@@ -12,7 +12,7 @@ var confess = {
 
         var url = system.args[1]
         var agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.11 (KHTML, like Gecko) Chrome/17.0.963.12 Safari/535.11";
-        var config = {'userAgent': agent, 'url': url, 'wait': 0, 
+        var config = {'userAgent': agent, 'url': url, 'wait': 0, 'timeout': 10000, 
                       'screenshot': null, 'filmstrip': null, 'delimiter': ' '}
 
         for(var i=2; i < system.args.length; ++i){
@@ -26,6 +26,9 @@ var confess = {
                 i++;
             } else if(flag === '--delimiter'){
                 config.delimiter = system.args[i+1];
+                i++;
+            } else if(flag == '--timeout'){
+                config.timeout = ~~(parseFloat(system.args[i+1]) * 1000);
                 i++;
             } else if(flag === '--help'){
                 console.log(usage);
@@ -357,7 +360,15 @@ var confess = {
     load: function (config, task, scope) {
         var page = new WebPage(), event;
         
-        page.settings.userAgent = config.userAgent;        
+        page.settings.userAgent = config.userAgent;
+        page.settings.resourceTimeout = config.timeout;
+
+        page.onResourceTimeout = function(e) {
+            console.log(e.errorCode);
+            console.log(e.errorString);
+            console.log(e.url);
+            phantom.exit(1);
+        };
 
         ['onInitialized', 'onLoadStarted', 'onResourceRequested', 'onResourceReceived']
         .forEach(function (event) {
